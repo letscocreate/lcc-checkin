@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { WalletProvider } from "@/lib/wallet-context";
 
@@ -15,6 +16,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Rede de testes (devnet) · moedas sem valor
         </div>
         <WalletProvider>{children}</WalletProvider>
+        <footer className="flex justify-center gap-4 px-4 py-6 text-sm text-zinc-600">
+          <Link href="/" className="underline">
+            Início
+          </Link>
+          <Link href="/historico" className="underline">
+            Histórico
+          </Link>
+        </footer>
       </body>
     </html>
   );

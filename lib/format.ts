@@ -20,6 +20,11 @@ export function formatTime(unixSeconds: number | null) {
   });
 }
 
+export function formatDate(unixSeconds: number | null) {
+  if (unixSeconds === null) return "—";
+  return new Date(unixSeconds * 1000).toLocaleDateString("pt-BR");
+}
+
 export function solscanTxUrl(signature: string) {
   return `https://solscan.io/tx/${signature}?cluster=devnet`;
 }

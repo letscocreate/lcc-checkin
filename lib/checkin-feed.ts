@@ -1,6 +1,7 @@
 import { address, type Signature } from "@solana/kit";
 import { rpc } from "./rpc";
 import { MEMO_PREFIX, TEAM_WALLET_ADDRESS } from "./config";
+import { validateRoomName } from "./validation";
 
 // Lê os check-ins direto da blockchain: as transações da carteira da turma,
 // com o memo "LCC | <sala> | <nome>". Nada é guardado fora da memória da aba.
@@ -134,40 +135,55 @@ async function mapWithLimit<T, R>(
   return results;
 }
 
-// Check-ins de uma sala: filtro pelo nome exato, uma vez por carteira
+// Check-ins das salas aceitas pelo filtro, uma vez por carteira em cada sala
 // (vale o primeiro check-in), do mais recente para o mais antigo.
-export async function loadRoomCheckins(roomName: string): Promise<Checkin[]> {
+async function collectCheckins(
+  acceptRoom: (roomName: string) => boolean,
+): Promise<Checkin[]> {
   await refreshTeamSignatures();
 
-  const roomSignatures = teamSignatures.flatMap((item) => {
+  const matching = teamSignatures.flatMap((item) => {
     const parsed = parseCheckinMemo(item.memo);
-    if (!parsed || parsed.roomName !== roomName) return [];
-    return [{ ...item, studentName: parsed.studentName }];
+    if (!parsed || !acceptRoom(parsed.roomName)) return [];
+    return [{ ...item, ...parsed }];
   });
 
   const wallets = await mapWithLimit(
-    roomSignatures,
+    matching,
     MAX_PARALLEL_REQUESTS,
     (item) => fetchSignerWallet(item.signature),
   );
 
   // teamSignatures vem do mais recente para o mais antigo; percorrendo de
   // trás para frente, o primeiro que aparece de cada carteira é o mais antigo.
-  const firstByWallet = new Map<string, Checkin>();
-  for (let i = roomSignatures.length - 1; i >= 0; i--) {
+  const firstByRoomAndWallet = new Map<string, Checkin>();
+  for (let i = matching.length - 1; i >= 0; i--) {
     const wallet = wallets[i];
-    if (!wallet || firstByWallet.has(wallet)) continue;
-    const item = roomSignatures[i];
-    firstByWallet.set(wallet, {
+    if (!wallet) continue;
+    const item = matching[i];
+    const key = `${item.roomName}|${wallet}`;
+    if (firstByRoomAndWallet.has(key)) continue;
+    firstByRoomAndWallet.set(key, {
       signature: item.signature,
-      roomName,
+      roomName: item.roomName,
       studentName: item.studentName,
       wallet,
       blockTime: item.blockTime,
     });
   }
 
-  return [...firstByWallet.values()].sort(
+  return [...firstByRoomAndWallet.values()].sort(
     (a, b) => (b.blockTime ?? 0) - (a.blockTime ?? 0),
   );
+}
+
+// Filtro pelo nome exato da sala: "bloco5-aula1" nunca mistura com "bloco5-aula10".
+export function loadRoomCheckins(roomName: string) {
+  return collectCheckins((name) => name === roomName);
+}
+
+// Todas as salas com nome válido (qualquer pessoa pode mandar um memo com
+// um nome de sala fora do padrão; esses ficam de fora).
+export function loadAllCheckins() {
+  return collectCheckins((name) => validateRoomName(name) === null);
 }
