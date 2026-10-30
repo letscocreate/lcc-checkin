@@ -2,6 +2,8 @@
 
 Lista de presença das aulas e eventos da Let's CoCreate (LCC), gravada na blockchain da Solana (rede de testes, **devnet**).
 
+**Acesse: https://lcc-checkin.vercel.app**
+
 Feito para o Bloco 5 da LCC, em parceria com a Superteam Brasil: mostrar um registro de presença na blockchain e depois debater com a turma se isso precisava mesmo de blockchain.
 
 > Rede de testes (devnet) · moedas sem valor. Use só o primeiro nome ou apelido: tudo o que vai para a blockchain é público e permanente.
@@ -31,7 +33,6 @@ Todos os check-ins ficam públicos na [página da carteira da turma no Solscan](
 | [`lib/wallet-context.tsx`](lib/wallet-context.tsx) | Conexão com a Phantom via Wallet Standard |
 | [`app/[sala]/page.tsx`](app/[sala]/page.tsx) | Página da sala |
 | [`app/api/rpc/route.ts`](app/api/rpc/route.ts) | Repassa os pedidos para a devnet, só com os comandos que o app usa |
-| [`SPEC.md`](SPEC.md) | A especificação completa, etapa por etapa |
 
 Feito com [Next.js](https://nextjs.org), [`@solana/kit`](https://github.com/anza-xyz/kit) e [Wallet Standard](https://github.com/wallet-standard/wallet-standard). Usa só programas que já existem na Solana (System Program e Memo Program), sem nenhum programa novo.
 
