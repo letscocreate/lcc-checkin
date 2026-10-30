@@ -46,13 +46,13 @@ export function CheckinList({
   error: string | null;
 }) {
   return (
-    <section className="w-full max-w-md text-left">
+    <section className="w-full text-left">
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold text-zinc-900">
+        <h2 className="text-xl font-semibold text-zinc-900 sm:text-2xl">
           Quem já fez check-in
         </h2>
         {checkins && (
-          <span className="text-sm text-zinc-600">
+          <span className="text-base font-semibold text-zinc-700 sm:text-lg">
             {checkins.length} {checkins.length === 1 ? "pessoa" : "pessoas"}
           </span>
         )}
@@ -67,14 +67,14 @@ export function CheckinList({
           Ninguém fez check-in nesta sala ainda.
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200">
+        <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
           {checkins.map((checkin) => (
             <li
               key={checkin.signature}
               className="flex items-center justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate font-medium text-zinc-900">
+                <p className="truncate text-lg font-medium text-zinc-900 sm:text-xl">
                   {checkin.studentName}
                 </p>
                 <a
@@ -86,7 +86,7 @@ export function CheckinList({
                   {shortenAddress(checkin.wallet)}
                 </a>
               </div>
-              <span className="shrink-0 text-sm text-zinc-600">
+              <span className="shrink-0 text-base text-zinc-600 sm:text-lg">
                 {formatTime(checkin.blockTime)}
               </span>
             </li>

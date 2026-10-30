@@ -22,24 +22,53 @@ import {
 import type { Wallet, WalletAccount } from "@wallet-standard/base";
 import { rpc } from "./rpc";
 import { CHECKIN_LAMPORTS, MEMO_PREFIX, TEAM_WALLET_ADDRESS } from "./config";
+import { CheckinError, toCheckinError } from "./checkin-errors";
 
 export const SOLANA_DEVNET_CHAIN = "solana:devnet";
 
+// Taxa de uma transação com uma assinatura, em lamports.
+const SIGNATURE_FEE_LAMPORTS = BigInt(5000);
+
 export type CheckinStage = "awaiting-signature" | "sending" | "confirmed";
 
-export class CheckinError extends Error {}
-
-export function buildCheckinMemo(roomName: string, studentName: string) {
-  return `${MEMO_PREFIX} | ${roomName} | ${studentName}`;
-}
-
-export async function performCheckin(options: {
+type CheckinOptions = {
   wallet: Wallet;
   account: WalletAccount;
   roomName: string;
   studentName: string;
   onStage: (stage: CheckinStage) => void;
-}): Promise<{ signature: string }> {
+};
+
+export function buildCheckinMemo(roomName: string, studentName: string) {
+  return `${MEMO_PREFIX} | ${roomName} | ${studentName}`;
+}
+
+export async function performCheckin(
+  options: CheckinOptions,
+): Promise<{ signature: string }> {
+  try {
+    return await runCheckin(options);
+  } catch (err) {
+    throw toCheckinError(err);
+  }
+}
+
+// Depois do check-in a conta do aluno precisa continuar com o mínimo de
+// "aluguel" da Solana, senão a transação é recusada. Conferimos antes de
+// pedir a assinatura para dar uma mensagem clara.
+async function assertEnoughBalance(studentAddress: ReturnType<typeof address>) {
+  const [{ value: balance }, rentExemptMinimum] = await Promise.all([
+    rpc.getBalance(studentAddress).send(),
+    rpc.getMinimumBalanceForRentExemption(BigInt(0)).send(),
+  ]);
+  const required =
+    BigInt(CHECKIN_LAMPORTS) + SIGNATURE_FEE_LAMPORTS + rentExemptMinimum;
+  if (balance < required) {
+    throw new CheckinError("insufficient-funds");
+  }
+}
+
+async function runCheckin(options: CheckinOptions) {
   const { wallet, account, roomName, studentName, onStage } = options;
 
   const signFeature = wallet.features[SolanaSignTransaction] as
@@ -47,12 +76,18 @@ export async function performCheckin(options: {
     | undefined;
   if (!signFeature) {
     throw new CheckinError(
+      "unknown",
       "Essa carteira não sabe assinar transações da Solana.",
     );
+  }
+  if (!account.chains.includes(SOLANA_DEVNET_CHAIN)) {
+    throw new CheckinError("wrong-network");
   }
 
   const studentAddress = address(account.address);
   const studentSigner = createNoopSigner(studentAddress);
+
+  await assertEnoughBalance(studentAddress);
 
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
@@ -117,7 +152,11 @@ async function waitForConfirmation(
     const status = value[0];
     if (status) {
       if (status.err) {
-        throw new CheckinError("A transação falhou na blockchain.");
+        throw new CheckinError(
+          "unknown",
+          "A transação falhou na blockchain. Nada foi cobrado além da taxa.",
+          signature,
+        );
       }
       if (
         status.confirmationStatus === "confirmed" ||
@@ -128,7 +167,5 @@ async function waitForConfirmation(
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  throw new CheckinError(
-    "A confirmação está demorando mais que o esperado. Confira o link do Solscan antes de tentar de novo.",
-  );
+  throw new CheckinError("timeout", undefined, signature);
 }
