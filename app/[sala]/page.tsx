@@ -9,6 +9,7 @@ import { performCheckin, CheckinError, type CheckinStage } from "@/lib/checkin";
 import { solscanTxUrl } from "@/lib/format";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { WalletButton } from "@/components/WalletButton";
+import { CheckinList, useRoomCheckins } from "@/components/CheckinList";
 
 const STAGE_LABEL: Record<CheckinStage, string> = {
   "awaiting-signature": "Aguardando sua assinatura na Phantom...",
@@ -26,6 +27,7 @@ export default function RoomPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [stage, setStage] = useState<CheckinStage | null>(null);
   const [signature, setSignature] = useState<string | null>(null);
+  const roomCheckins = useRoomCheckins(roomName);
 
   async function handleCheckin(event: FormEvent) {
     event.preventDefault();
@@ -51,6 +53,7 @@ export default function RoomPage() {
         onStage: setStage,
       });
       setSignature(result.signature);
+      roomCheckins.refresh();
     } catch (err) {
       setFormError(
         err instanceof CheckinError || err instanceof Error
@@ -132,6 +135,11 @@ export default function RoomPage() {
           </button>
         </form>
       )}
+
+      <CheckinList
+        checkins={roomCheckins.checkins}
+        error={roomCheckins.error}
+      />
     </main>
   );
 }

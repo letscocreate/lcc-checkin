@@ -12,6 +12,14 @@ export function formatSol(lamports: bigint | number) {
   return `${lamportsToSol(lamports).toFixed(4)} SOL`;
 }
 
+export function formatTime(unixSeconds: number | null) {
+  if (unixSeconds === null) return "—";
+  return new Date(unixSeconds * 1000).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function solscanTxUrl(signature: string) {
   return `https://solscan.io/tx/${signature}?cluster=devnet`;
 }
