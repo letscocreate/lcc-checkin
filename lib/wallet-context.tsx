@@ -28,6 +28,7 @@ function isSolanaWallet(wallet: Wallet) {
 type WalletStatus = "disconnected" | "connecting" | "connected" | "error";
 
 type WalletContextValue = {
+  wallet: Wallet | null;
   account: WalletAccount | null;
   status: WalletStatus;
   error: string | null;
@@ -114,8 +115,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [wallet]);
 
   const value = useMemo<WalletContextValue>(
-    () => ({ account, status, error, connect, disconnect }),
-    [account, status, error, connect, disconnect],
+    () => ({ wallet, account, status, error, connect, disconnect }),
+    [wallet, account, status, error, connect, disconnect],
   );
 
   return (

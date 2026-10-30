@@ -11,3 +11,11 @@ export function lamportsToSol(lamports: bigint | number) {
 export function formatSol(lamports: bigint | number) {
   return `${lamportsToSol(lamports).toFixed(4)} SOL`;
 }
+
+export function solscanTxUrl(signature: string) {
+  return `https://solscan.io/tx/${signature}?cluster=devnet`;
+}
+
+export function solscanAddressUrl(walletAddress: string) {
+  return `https://solscan.io/account/${walletAddress}?cluster=devnet`;
+}
